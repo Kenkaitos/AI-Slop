@@ -1,6 +1,9 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { createContext, useContext, ReactNode } from "react"
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 interface DashboardDataContext {
     uploadedFiles: any[]
@@ -15,54 +18,37 @@ const DashboardDataContext = createContext<DashboardDataContext>({
     departmentFiles: [],
     loadingFiles: true,
     loadingDepartment: true,
-    refetch: () => { },
+    refetch: () => {},
 })
 
 export function DashboardDataProvider({ children }: { children: ReactNode }) {
-    const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
-    const [departmentFiles, setDepartmentFiles] = useState<any[]>([])
-    const [loadingFiles, setLoadingFiles] = useState(true)
-    const [loadingDepartment, setLoadingDepartment] = useState(true)
-
-    async function fetchFiles() {
-        setLoadingFiles(true)
-        setLoadingDepartment(true)
-        try {
-            const [filesRes, deptRes] = await Promise.all([
-                fetch("/api/files"),
-                fetch("/api/files?type=department"),
-            ])
-
-            const files = await filesRes.json()
-            const dept = await deptRes.json()
-
-            // Log so you can see errors in the browser console
-            if (files.error) console.error("files error:", files.error)
-            if (dept.error) console.error("dept error:", dept.error)
-
-            setUploadedFiles(Array.isArray(files) ? files : [])
-            setDepartmentFiles(Array.isArray(dept) ? dept : [])
-        } catch (e) {
-            console.error("fetch error:", e)
-            setUploadedFiles([])
-            setDepartmentFiles([])
-        } finally {
-            setLoadingFiles(false)
-            setLoadingDepartment(false)
+    const { data: files, isLoading: loadingFiles, mutate: mutateFiles } = useSWR(
+        "/api/files",
+        fetcher,
+        {
+            revalidateOnFocus: false,    // don't refetch on tab switch
+            revalidateOnReconnect: false, // don't refetch on reconnect
+            dedupingInterval: 60000,      // cache for 60 seconds
         }
-    }
+    )
 
-    useEffect(() => {
-        fetchFiles()
-    }, [])
+    const { data: dept, isLoading: loadingDepartment, mutate: mutateDept } = useSWR(
+        "/api/files?type=department",
+        fetcher,
+        {
+            revalidateOnFocus: false,
+            revalidateOnReconnect: false,
+            dedupingInterval: 60000,
+        }
+    )
 
     return (
         <DashboardDataContext.Provider value={{
-            uploadedFiles,
-            departmentFiles,
+            uploadedFiles: Array.isArray(files) ? files : [],
+            departmentFiles: Array.isArray(dept) ? dept : [],
             loadingFiles,
             loadingDepartment,
-            refetch: fetchFiles,
+            refetch: () => { mutateFiles(); mutateDept() },
         }}>
             {children}
         </DashboardDataContext.Provider>

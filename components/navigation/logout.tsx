@@ -16,13 +16,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useUserProfile } from "@/context/user-profile-context"
 
 export function LogoutButton() {
   const [loading, setLoading] = useState(false)
+  const { revalidate } = useUserProfile()
 
   const handleLogout = async () => {
     setLoading(true)
     await logout()
+     revalidate()
     window.location.href = "/login"
   }
 
