@@ -1,37 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { createClient } from "@/utils/supabase/middleware"
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
+    const { pathname } = request.nextUrl
 
-  if (pathname.startsWith("/login")) {
-    return NextResponse.next()
-  }
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-        },
-      },
+    if (pathname.startsWith("/login")) {
+        return NextResponse.next()
     }
-  )
 
-  const { data: { user } } = await supabase.auth.getUser()
+    const { supabase, supabaseResponse } = createClient(request)
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url))
-  }
+    if (!user) {
+        // For API routes, return 401 instead of redirecting
+        if (pathname.startsWith("/api")) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+        return NextResponse.redirect(new URL("/login", request.url))
+    }
 
-  return NextResponse.next()
+    return supabaseResponse
 }
 
 export const config = {

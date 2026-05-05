@@ -23,6 +23,7 @@ export function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true)
     await logout()
+    window.location.href = "/login"
   }
 
   return (

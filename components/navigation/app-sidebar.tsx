@@ -72,7 +72,7 @@ export function AppSidebar() {
                 ))}
 
                 {/* Admin-only section */}
-                {isAdmin && (
+                {!loading && isAdmin && (
                     <>
                         <div className="my-2 border-t border-slate-700" />
                         <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">

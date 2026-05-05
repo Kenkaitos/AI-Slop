@@ -3,9 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 export const createClient = (request: NextRequest) => {
   let supabaseResponse = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -29,5 +27,5 @@ export const createClient = (request: NextRequest) => {
     }
   );
 
-  return supabaseResponse;
+  return { supabase, supabaseResponse }; // return both
 };

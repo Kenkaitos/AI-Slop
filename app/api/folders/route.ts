@@ -1,54 +1,89 @@
 import { createClient } from "@/utils/supabase/server"
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
+
+async function getSessionAndProfile() {
+    const supabase = await createClient()
+
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error || !user) return { supabase, profile: null }
+
+    const { data: profile } = await supabase
+        .from("users")
+        .select("id, workgroup, role")
+        .eq("auth_id", user.id)
+        .single()
+
+    return { supabase, profile }
+}
 
 export async function GET() {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get("session")
+    const { supabase, profile } = await getSessionAndProfile()
+    if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  if (!sessionCookie) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+    const { data, error } = await supabase
+        .from("folders")
+        .select("*")
+        .or(`workgroup.eq.${profile.workgroup},is_shared.eq.true`)
 
-  const session = JSON.parse(sessionCookie.value)
-  const supabase = await createClient()
-
-  const { data, error } = await supabase
-    .from("folders")
-    .select("*")
-    .or(`workgroup.eq.${session.workgroup},is_shared.eq.true`)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get("session")
+    const { supabase, profile } = await getSessionAndProfile()
+    if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  if (!sessionCookie) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+    const body = await request.json()
 
-  const session = JSON.parse(sessionCookie.value)
-  const supabase = await createClient()
-  const body = await request.json()
+    const { data, error } = await supabase
+        .from("folders")
+        .insert({
+            ...body,
+            workgroup: profile.workgroup,
+            user_id: profile.id,
+        })
+        .select()
 
-  const { data, error } = await supabase
-    .from("folders")
-    .insert({
-      ...body,
-      workgroup: session.workgroup,
-      user_id: session.id
-    })
-    .select()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
+}
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+export async function PATCH(request: Request) {
+    const { supabase, profile } = await getSessionAndProfile()
+    if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  return NextResponse.json(data)
+    const { id, ...updates } = await request.json()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const query = supabase.from("folders").update(updates).eq("id", id)
+
+    // Non-admins can only update their own folders
+    if (profile.role !== "admin") {
+        query.eq("user_id", profile.id)
+    }
+
+    const { data, error } = await query.select()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
+}
+
+export async function DELETE(request: Request) {
+    const { supabase, profile } = await getSessionAndProfile()
+    if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const { id } = await request.json()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const query = supabase.from("folders").delete().eq("id", id)
+
+    // Non-admins can only delete their own folders
+    if (profile.role !== "admin") {
+        query.eq("user_id", profile.id)
+    }
+
+    const { error } = await query
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
 }

@@ -15,7 +15,7 @@ const DashboardDataContext = createContext<DashboardDataContext>({
     departmentFiles: [],
     loadingFiles: true,
     loadingDepartment: true,
-    refetch: () => {},
+    refetch: () => { },
 })
 
 export function DashboardDataProvider({ children }: { children: ReactNode }) {
@@ -32,11 +32,18 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
                 fetch("/api/files"),
                 fetch("/api/files?type=department"),
             ])
+
             const files = await filesRes.json()
             const dept = await deptRes.json()
-            setUploadedFiles(Array.isArray(files) ? files : files.files || [])
-            setDepartmentFiles(Array.isArray(dept) ? dept : dept.files || [])
-        } catch {
+
+            // Log so you can see errors in the browser console
+            if (files.error) console.error("files error:", files.error)
+            if (dept.error) console.error("dept error:", dept.error)
+
+            setUploadedFiles(Array.isArray(files) ? files : [])
+            setDepartmentFiles(Array.isArray(dept) ? dept : [])
+        } catch (e) {
+            console.error("fetch error:", e)
             setUploadedFiles([])
             setDepartmentFiles([])
         } finally {

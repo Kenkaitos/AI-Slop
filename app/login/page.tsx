@@ -25,9 +25,12 @@ export default function LoginPage() {
 
     if (result?.error) {
       setError(result.error)
+      setLoading(false)
+      return
     }
 
-    setLoading(false)
+    // Force full page reload to clear any stale context state
+    window.location.href = "/dashboard"
   }
 
   return (
