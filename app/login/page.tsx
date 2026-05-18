@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { login } from "./actions"
 
 export default function LoginPage() {
-  const [nip, setNip] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -15,10 +15,21 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+
+    if (!email) {
+      setError("Email tidak boleh kosong")
+      return
+    }
+
+    if (!password) {
+      setError("Password tidak boleh kosong")
+      return
+    }
+
     setLoading(true)
 
     const formData = new FormData()
-    formData.append("nip", nip)
+    formData.append("email", email)
     formData.append("password", password)
 
     const result = await login(formData)
@@ -29,7 +40,6 @@ export default function LoginPage() {
       return
     }
 
-    // Force full page reload to clear any stale context state
     window.location.href = "/dashboard"
   }
 
@@ -45,25 +55,18 @@ export default function LoginPage() {
             />
           </div>
           <CardTitle className="text-2xl font-semibold">Selamat Datang</CardTitle>
-          <CardDescription>Masukkan NIP anda untuk masuk</CardDescription>
+          <CardDescription>Masukkan email anda untuk masuk</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <label htmlFor="nip" className="text-sm font-medium">NIP</label>
+              <label htmlFor="email" className="text-sm font-medium">Email</label>
               <Input
-                id="nip"
-                type="text"
-                placeholder="Masukkan NIP"
-                value={nip}
-                onChange={(e) => {
-                  const value = e.target.value
-                  if (/^\d*$/.test(value)) {
-                    setNip(value)
-                  }
-                }}
-                inputMode="numeric"
-                maxLength={18}
+                id="email"
+                type="email"
+                placeholder="Masukkan email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -86,12 +89,6 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Memuat..." : "Masuk"}
             </Button>
-            <div className="text-center text-sm text-black">
-              Lupa kata sandi?{" "}
-              <a href="/forgot-password" className="text-sm text-red-600 hover:underline">
-                Ganti disini
-              </a>
-            </div>
           </form>
         </CardContent>
       </Card>

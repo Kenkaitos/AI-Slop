@@ -7,12 +7,12 @@ import { UserList } from "@/components/dashboard/sections/user-list"
 import { useUserProfile } from "@/context/user-profile-context"
 
 export default function UserManagementPage() {
-    const { isAdmin, loadingProfile } = useUserProfile()
+    const { isAdmin, isModerator, loadingProfile } = useUserProfile()
     const router = useRouter()
 
     useEffect(() => {
-        if (!loadingProfile && !isAdmin) router.replace("/dashboard")
-    }, [loadingProfile, isAdmin])
+        if (!loadingProfile && !isAdmin && !isModerator) router.replace("/dashboard")
+    }, [loadingProfile, isAdmin, isModerator])
 
     return (
         <div className="flex min-h-screen bg-slate-100">

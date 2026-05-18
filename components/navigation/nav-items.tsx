@@ -14,5 +14,5 @@ export const navItems = [
 ]
 
 export const adminNavItems = [
-    { icon: Users, label: "User Management", href: "/user-management" },
+    { icon: Users, label: "Manajemen User", href: "/user-management" },
 ] 

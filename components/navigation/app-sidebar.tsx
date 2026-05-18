@@ -17,7 +17,7 @@ const roleLabel: Record<string, string> = {
 
 export function AppSidebar() {
     const pathname = usePathname()
-    const { profile, loadingProfile: loading, isAdmin } = useUserProfile()
+    const { profile, loadingProfile: loading, isAdmin, isModerator } = useUserProfile()
 
     return (
         <aside className="flex w-64 flex-col bg-slate-800 text-white">
@@ -72,7 +72,7 @@ export function AppSidebar() {
                 ))}
 
                 {/* Admin-only section */}
-                {!loading && isAdmin && (
+                {!loading && (isAdmin || isModerator) && (
                     <>
                         <div className="my-2 border-t border-slate-700" />
                         <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">

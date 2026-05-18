@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server"
 
 const authErrors: Record<string, string> = {
-  invalid_credentials: "NIP atau password salah",
+  invalid_credentials: "Email atau password salah",
   user_banned: "Akun Anda telah diblokir",
   email_not_confirmed: "Akun belum dikonfirmasi",
   over_request_rate_limit: "Terlalu banyak percobaan login. Coba lagi nanti",
@@ -13,11 +13,11 @@ const authErrors: Record<string, string> = {
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
-  const nip = formData.get("nip") as string
+  const email = formData.get("email") as string
   const password = formData.get("password") as string
 
   const { error: authError } = await supabase.auth.signInWithPassword({
-    email: `${nip}@gmail.com`,
+    email,
     password,
   })
 
@@ -30,6 +30,5 @@ export async function login(formData: FormData) {
     }
   }
 
-  // No redirect here — let the client handle it
   return { error: null }
 }
