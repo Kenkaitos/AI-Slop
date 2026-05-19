@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { logout } from "@/app/actions/logout"
 import { LogOut } from "lucide-react"
 
@@ -16,11 +15,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useUserProfile } from "@/context/user-profile-context"
+import { useProfile } from "@/hooks/use-profile"
 
 export function LogoutButton() {
   const [loading, setLoading] = useState(false)
-  const { revalidate } = useUserProfile()
+  const { revalidate } = useProfile()
 
   const handleLogout = async () => {
     setLoading(true)

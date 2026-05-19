@@ -2,27 +2,21 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { AppSidebar } from "@/components/navigation/app-sidebar"
-import { UserList } from "@/components/dashboard/sections/user-list"
-import { useUserProfile } from "@/context/user-profile-context"
+import { UserList } from "@/components/users/user-list"
+import { useProfile } from "@/hooks/use-profile"
 
 export default function UserManagementPage() {
-    const { isAdmin, isModerator, loadingProfile } = useUserProfile()
+    const { isAdmin, isModerator, loadingProfile } = useProfile()
     const router = useRouter()
 
     useEffect(() => {
-        if (!loadingProfile && !isAdmin && !isModerator) router.replace("/dashboard")
-    }, [loadingProfile, isAdmin, isModerator])
+        if (!loadingProfile && !isAdmin && !isModerator) {
+            router.replace("/dashboard")
+        }
+    }, [loadingProfile, isAdmin, isModerator, router])
 
-    return (
-        <div className="flex min-h-screen bg-slate-100">
-            <AppSidebar />
-            <main className="flex-1 overflow-hidden">
-                <div className="h-screen overflow-y-auto p-6">
-                    {/* Show list immediately, redirect happens in background if not admin */}
-                    <UserList />
-                </div>
-            </main>
-        </div>
-    )
+    if (loadingProfile) return null
+    if (!isAdmin && !isModerator) return null
+
+    return <UserList />
 }

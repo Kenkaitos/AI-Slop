@@ -89,11 +89,10 @@ export async function DELETE(request: Request) {
     const { id } = await request.json()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-    // Only allow deleting own files, unless admin
-    const query = supabase.from("files").delete().eq("id", id)
+    let query = supabase.from("files").delete().eq("id", id)
 
     if (profile.role !== "admin") {
-        query.eq("user_id", profile.id)
+        query = query.eq("user_id", profile.id)
     }
 
     const { error } = await query

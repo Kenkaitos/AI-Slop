@@ -1,74 +1,97 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
-    Search,
-    MoreVertical,
-    Edit,
-    Trash2,
-    Shield,
-    Clock,
-    UserPlus,
+    Search, MoreVertical, Edit, Trash2,
+    Shield, Clock, UserPlus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+    DropdownMenu, DropdownMenuContent,
+    DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+    Table, TableBody, TableCell,
+    TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+    AlertDialog, AlertDialogAction, AlertDialogCancel,
+    AlertDialogContent, AlertDialogDescription,
+    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useUserProfile } from "@/context/user-profile-context"
+import {
+    Dialog, DialogContent, DialogDescription,
+    DialogHeader, DialogTitle,
+} from "@/components/ui/dialog"
+import { useProfile } from "@/hooks/use-profile"
+import { useUsers } from "@/hooks/use-users"
+import { User } from "@/lib/users-api"
 import { FieldError } from "@/components/ui/field-error"
+import { TableFilters } from "@/components/shared/table-filters"
+import { useEffect } from "react"
 
-interface User {
-    id: string
-    nip: string
-    email: string
-    workgroup: string
-    role: "admin" | "user" | "moderator"
-    auth_id: string
-    created_at: string
-}
+// ─── Constants ───────────────────────────────────────────────
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const WORKGROUPS = ["Perumahan", "Keuangan", "Tata Ruang"]
+
+const USER_FILTERS = [
+    {
+        key: "role",
+        label: "Role",
+        options: [
+            { label: "Admin", value: "admin" },
+            { label: "Moderator", value: "moderator" },
+            { label: "User", value: "user" },
+        ],
+    },
+    {
+        key: "workgroup",
+        label: "Workgroup",
+        options: WORKGROUPS.map(w => ({ label: w, value: w })),
+    },
+    {
+        key: "joined",
+        label: "Bergabung",
+        options: [
+            { label: "7 hari terakhir", value: "7days" },
+            { label: "30 hari terakhir", value: "30days" },
+            { label: "3 bulan terakhir", value: "3months" },
+            { label: "Tahun ini", value: "thisyear" },
+        ],
+    },
+]
+
+const DEFAULT_FILTERS = { role: "all", workgroup: "all", joined: "all" }
 
 function getRoleColor(role: string) {
     switch (role) {
-        case "admin":
-            return "bg-red-100 text-red-800"
-        case "moderator":
-            return "bg-blue-100 text-blue-800"
-        default:
-            return "bg-slate-100 text-slate-800"
+        case "admin": return "bg-red-100 text-red-800"
+        case "moderator": return "bg-blue-100 text-blue-800"
+        default: return "bg-slate-100 text-slate-800"
     }
 }
 
+function isWithinDays(dateStr: string, days: number) {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+    return diff <= days
+}
+
+function matchesJoinedFilter(createdAt: string, filter: string) {
+    switch (filter) {
+        case "7days": return isWithinDays(createdAt, 7)
+        case "30days": return isWithinDays(createdAt, 30)
+        case "3months": return isWithinDays(createdAt, 90)
+        case "thisyear": return new Date(createdAt).getFullYear() === new Date().getFullYear()
+        default: return true
+    }
+}
+
+// ─── UserDialog ───────────────────────────────────────────────
 interface UserDialogProps {
     user: User | null
     open: boolean
@@ -86,8 +109,7 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
     const [saving, setSaving] = useState(false)
     const [errors, setErrors] = useState<Record<string, string>>({})
 
-    const { profile, isAdmin, isModerator } = useUserProfile()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const { profile, isAdmin, isModerator } = useProfile()
 
     useEffect(() => {
         if (mode === "edit" && user) {
@@ -109,17 +131,11 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
     async function handleSave() {
         const newErrors: Record<string, string> = {}
 
-        if (!nip) {
-            newErrors.nip = "NIP tidak boleh kosong"
-        } else if (nip.length < 1) {
-            newErrors.nip = "NIP harus 18 digit"
-        }
+        if (!nip) newErrors.nip = "NIP tidak boleh kosong"
+        else if (nip.length < 18) newErrors.nip = "NIP harus 18 digit"
 
-        if (!email) {
-            newErrors.email = "Email tidak boleh kosong"
-        } else if (!emailRegex.test(email)) {
-            newErrors.email = "Format email tidak valid"
-        }
+        if (!email) newErrors.email = "Email tidak boleh kosong"
+        else if (!emailRegex.test(email)) newErrors.email = "Format email tidak valid"
 
         if (mode === "add" && password.length < 6) newErrors.password = "Password minimal 6 karakter"
         if (mode === "edit" && password && password.length < 6) newErrors.password = "Password minimal 6 karakter"
@@ -131,14 +147,7 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
 
         setSaving(true)
         if (mode === "edit") {
-            await onSave({
-                id: user!.id,
-                nip,
-                email,
-                workgroup,
-                role,
-                ...(password ? { password } : {})
-            })
+            await onSave({ id: user!.id, nip, email, workgroup, role, ...(password ? { password } : {}) })
         } else {
             await onSave({ nip, email, workgroup, role, password })
         }
@@ -164,7 +173,7 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
                                 const value = e.target.value
                                 if (/^\d*$/.test(value)) {
                                     setNip(value)
-                                    if (value && value.length === 1) setErrors((prev) => ({ ...prev, nip: "" }))
+                                    if (value.length === 18) setErrors(p => ({ ...p, nip: "" }))
                                 }
                             }}
                             inputMode="numeric"
@@ -180,9 +189,7 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
                             value={email}
                             onChange={(e) => {
                                 setEmail(e.target.value)
-                                if (emailRegex.test(e.target.value)) {
-                                    setErrors((prev) => ({ ...prev, email: "" }))
-                                }
+                                if (emailRegex.test(e.target.value)) setErrors(p => ({ ...p, email: "" }))
                             }}
                             type="email"
                             placeholder="Masukkan email"
@@ -195,13 +202,13 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
                         <select
                             value={workgroup}
                             onChange={(e) => setWorkgroup(e.target.value)}
-                            disabled={isModerator} // moderators can't change workgroup
+                            disabled={isModerator}
                             className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <option value="">Pilih workgroup</option>
-                            <option value="Perumahan">Perumahan</option>
-                            <option value="Keuangan">Keuangan</option>
-                            <option value="Tata Ruang">Tata Ruang</option>
+                            {WORKGROUPS.map(w => (
+                                <option key={w} value={w}>{w}</option>
+                            ))}
                         </select>
                     </div>
                     <div className="space-y-2">
@@ -211,7 +218,6 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
                             onChange={(e) => setRole(e.target.value as User["role"])}
                             className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                         >
-                            {/* Moderators can only assign user role */}
                             {isAdmin && <option value="admin">Admin</option>}
                             {isAdmin && <option value="moderator">Moderator</option>}
                             <option value="user">User</option>
@@ -230,7 +236,7 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
                             onChange={(e) => {
                                 setPassword(e.target.value)
                                 if (e.target.value.length >= 6 || e.target.value.length === 0) {
-                                    setErrors((prev) => ({ ...prev, password: "" }))
+                                    setErrors(p => ({ ...p, password: "" }))
                                 }
                             }}
                             placeholder="Masukkan password"
@@ -239,11 +245,9 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
                         <FieldError message={errors.password} />
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>
-                            Cancel
-                        </Button>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                         <Button onClick={handleSave} disabled={saving}>
-                            {saving ? "Saving..." : mode === "edit" ? "Save Changes" : "Add User"}
+                            {saving ? "Saving..." : mode === "edit" ? "Save Changes" : "Tambah Pengguna"}
                         </Button>
                     </div>
                 </div>
@@ -252,148 +256,45 @@ function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialogProps)
     )
 }
 
+// ─── UserList ─────────────────────────────────────────────────
 export function UserList() {
     const [searchQuery, setSearchQuery] = useState("")
-    const [users, setUsers] = useState<User[]>([])
-    const [loading, setLoading] = useState(true)
+    const [filterValues, setFilterValues] = useState(DEFAULT_FILTERS)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [dialogMode, setDialogMode] = useState<"edit" | "add">("add")
     const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
 
-    const { profile, isAdmin, isModerator } = useUserProfile()
-
-    async function fetchUsers() {
-        setLoading(true)
-        try {
-            const res = await fetch("/api/users")
-            const data = await res.json()
-            setUsers(Array.isArray(data) ? data : data.users || [])
-        } catch {
-            setUsers([])
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchUsers()
-    }, [])
+    const { profile, isAdmin, isModerator } = useProfile()
+    const { users, isLoading, addUser, editUser, removeUser } = useUsers()
 
     async function handleSave(updated: Partial<User> & { password?: string }) {
-        if (dialogMode === "add") {
-            const tempUser: User = {
-                id: crypto.randomUUID(),
-                nip: updated.nip ?? "",
-                email: updated.email ?? "",
-                workgroup: updated.workgroup ?? "",
-                role: (updated.role as User["role"]) ?? "user",
-                auth_id: "",
-                created_at: new Date().toISOString(),
-            }
-
-            const previousUsers = users
-
-            // Instant UI update
-            setUsers((prev) => [tempUser, ...prev])
-
-            try {
-                const res = await fetch("/api/users", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(updated),
-                })
-
-                if (!res.ok) {
-                    throw new Error("Failed")
-                }
-
-                const createdUser = await res.json()
-
-                // Replace temp user with real one
-                setUsers((prev) =>
-                    prev.map((u) =>
-                        u.id === tempUser.id
-                            ? createdUser
-                            : u
-                    )
-                )
-            } catch {
-                // Rollback
-                setUsers(previousUsers)
-            }
-
-            return
-        }
-
-        // EDIT MODE
-
-        const previousUsers = users
-
-        // Instant UI update
-        setUsers((prev) =>
-            prev.map((u) =>
-                u.id === updated.id
-                    ? {
-                        ...u,
-                        ...updated,
-                    }
-                    : u
-            )
-        )
-
-        try {
-            const res = await fetch("/api/users", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updated),
-            })
-
-            if (!res.ok) {
-                throw new Error("Failed")
-            }
-        } catch {
-            // Rollback on failure
-            setUsers(previousUsers)
-        }
+        if (dialogMode === "add") await addUser(updated)
+        else await editUser(updated)
     }
 
-    async function handleDelete(id: string) {
-        // Save current state for rollback
-        const previousUsers = users
-
-        // Optimistically remove user instantly
-        setUsers((prev) => prev.filter((u) => u.id !== id))
-
-        try {
-            const res = await fetch("/api/users", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id }),
-            })
-
-            if (!res.ok) {
-                throw new Error("Delete failed")
-            }
-        } catch {
-            // Rollback if failed
-            setUsers(previousUsers)
-        }
-    }
-
-    const filteredUsers = users.filter(
-        (user) =>
-            user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.nip?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.workgroup?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-
-    // Check if a user can be edited/deleted by the current user
     function canModify(targetUser: User) {
         if (isAdmin) return targetUser.id !== profile?.id
         if (isModerator) return targetUser.role === "user" && targetUser.workgroup === profile?.workgroup
         return false
     }
+
+    function handleFilterChange(key: string, value: string) {
+        setFilterValues(prev => ({ ...prev, [key]: value }))
+    }
+
+    const filteredUsers = users.filter(user => {
+        const matchesSearch =
+            user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.nip?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.workgroup?.toLowerCase().includes(searchQuery.toLowerCase())
+
+        const matchesRole = filterValues.role === "all" || user.role === filterValues.role
+        const matchesWorkgroup = filterValues.workgroup === "all" || user.workgroup === filterValues.workgroup
+        const matchesJoined = matchesJoinedFilter(user.created_at, filterValues.joined)
+
+        return matchesSearch && matchesRole && matchesWorkgroup && matchesJoined
+    })
 
     return (
         <div className="rounded-xl bg-white p-5 shadow-sm">
@@ -405,7 +306,6 @@ export function UserList() {
                 mode={dialogMode}
             />
 
-            {/* Delete confirmation */}
             <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -420,7 +320,7 @@ export function UserList() {
                         <AlertDialogAction
                             className="bg-red-600 hover:bg-red-700"
                             onClick={() => {
-                                if (deleteTarget) handleDelete(deleteTarget.id)
+                                if (deleteTarget) removeUser(deleteTarget.id)
                                 setDeleteTarget(null)
                             }}
                         >
@@ -446,15 +346,23 @@ export function UserList() {
                 </Button>
             </div>
 
-            {/* Search */}
-            <div className="mb-4 relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                    type="search"
-                    placeholder="Search by email, NIP or workgroup..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+            {/* Search + Filter */}
+            <div className="mb-4 flex gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                        type="search"
+                        placeholder="Cari email, NIP, atau workgroup..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+                <TableFilters
+                    filters={USER_FILTERS}
+                    values={filterValues}
+                    onChange={handleFilterChange}
+                    onReset={() => setFilterValues(DEFAULT_FILTERS)}
                 />
             </div>
 
@@ -471,7 +379,7 @@ export function UserList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading ? (
+                        {isLoading ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center py-8">
                                     <p className="text-sm text-slate-500">Memuat...</p>
@@ -480,7 +388,7 @@ export function UserList() {
                         ) : filteredUsers.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center py-8">
-                                    <p className="text-sm text-slate-500">No users found</p>
+                                    <p className="text-sm text-slate-500">Tidak ada pengguna</p>
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -504,14 +412,10 @@ export function UserList() {
                                             </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-sm text-slate-600">
-                                        {user.workgroup}
-                                    </TableCell>
+                                    <TableCell className="text-sm text-slate-600">{user.workgroup}</TableCell>
                                     <TableCell>
                                         <Badge className={getRoleColor(user.role)}>
-                                            {user.role === "admin" && (
-                                                <Shield className="mr-1 h-3 w-3" />
-                                            )}
+                                            {user.role === "admin" && <Shield className="mr-1 h-3 w-3" />}
                                             {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                                         </Badge>
                                     </TableCell>
@@ -529,18 +433,16 @@ export function UserList() {
                                         {canModify(user) ? (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <Button variant="ghost" name="icon" size="icon" className="h-8 w-8">
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
-                                                        onClick={() => {
-                                                            setSelectedUser(user)
-                                                            setDialogMode("edit")
-                                                            setDialogOpen(true)
-                                                        }}
-                                                    >
+                                                    <DropdownMenuItem onClick={() => {
+                                                        setSelectedUser(user)
+                                                        setDialogMode("edit")
+                                                        setDialogOpen(true)
+                                                    }}>
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         Edit
                                                     </DropdownMenuItem>
@@ -553,12 +455,9 @@ export function UserList() {
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
-                                        ) : (
-                                            // Show nothing for users that can't be modified
-                                            user.id === profile?.id ? (
-                                                <span className="text-xs text-slate-400 pr-2">You</span>
-                                            ) : null
-                                        )}
+                                        ) : user.id === profile?.id ? (
+                                            <span className="text-xs text-slate-400 pr-2">You</span>
+                                        ) : null}
                                     </TableCell>
                                 </TableRow>
                             ))

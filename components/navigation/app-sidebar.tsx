@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { navItems, adminNavItems } from "@/components/navigation/nav-items"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoutButton } from "@/components/navigation/logout"
-import { useUserProfile } from "@/context/user-profile-context"
+import { useProfile } from "@/hooks/use-profile"
 
 const roleLabel: Record<string, string> = {
     admin: "Administrator",
@@ -17,7 +17,7 @@ const roleLabel: Record<string, string> = {
 
 export function AppSidebar() {
     const pathname = usePathname()
-    const { profile, loadingProfile: loading, isAdmin, isModerator } = useUserProfile()
+    const { profile, loadingProfile: loading, isAdmin, isModerator } = useProfile()
 
     return (
         <aside className="flex w-64 flex-col bg-slate-800 text-white">
