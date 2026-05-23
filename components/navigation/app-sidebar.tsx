@@ -8,6 +8,7 @@ import { navItems, adminNavItems } from "@/components/navigation/nav-items"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoutButton } from "@/components/navigation/logout"
 import { useProfile } from "@/hooks/use-profile"
+import { ProfileImage } from "@/components/shared/profile-image"
 
 const roleLabel: Record<string, string> = {
     admin: "Administrator",
@@ -24,12 +25,12 @@ export function AppSidebar() {
 
             {/* User Profile */}
             <div className="flex items-center gap-3 border-b border-slate-700 p-5">
-                <Avatar className="h-12 w-12 border-2 border-white">
-                    <AvatarImage src="/avatars/profile.png" alt="User" />
-                    <AvatarFallback className="bg-slate-600 text-white">
-                        {profile?.nip?.slice(0, 2).toUpperCase() ?? "UA"}
-                    </AvatarFallback>
-                </Avatar>
+                <ProfileImage
+                    avatarUrl={profile?.avatar_url}
+                    initials={profile?.email?.slice(0, 2).toUpperCase() ?? "UA"}
+                    size="md"
+                    className="border-2 border-white"
+                />
 
                 <div>
                     {loading ? (

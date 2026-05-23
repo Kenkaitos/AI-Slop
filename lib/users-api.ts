@@ -6,6 +6,7 @@ export interface User {
     role: "admin" | "user" | "moderator"
     auth_id: string
     created_at: string
+    avatar_url?: string | null
 }
 
 export async function getUsers(): Promise<User[]> {

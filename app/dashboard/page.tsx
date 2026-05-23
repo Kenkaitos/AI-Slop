@@ -1,6 +1,6 @@
 "use client"
 
-import DashboardSection from "@/components/dashboard/dashboard-section"
+import DashboardSection from "@/app/dashboard/components/dashboard-section"
 import { useFiles } from "@/hooks/use-files"
 
 export default function DashboardPage() {

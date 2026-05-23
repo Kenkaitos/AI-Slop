@@ -1,7 +1,7 @@
 'use client'
 
-import { ProfileHeader } from '@/components/profile/profile-header'
-import { ProfileInfo } from '@/components/profile/profile-info'
+import { ProfileHeader } from '@/app/profile/components/profile-header'
+import { ProfileInfo } from '@/app/profile/components/profile-info'
 import { useProfile } from '@/hooks/use-profile'
 
 export default function ProfilePage() {

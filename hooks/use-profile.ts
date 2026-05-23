@@ -12,6 +12,7 @@ export interface UserProfile {
     role: UserRole
     auth_id: string
     created_at: string
+    avatar_url?: string | null
 }
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
@@ -37,5 +38,7 @@ export function useProfile() {
         isModerator: role === "moderator",
         isUser: role === "user",
         revalidate: () => mutate(),
+        updateProfile: (updates: Partial<typeof profile>) => 
+            mutate({ ...profile, ...updates }, false),
     }
 }

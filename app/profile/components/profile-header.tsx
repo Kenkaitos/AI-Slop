@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { ProfileAvatar } from './profile-avatar'
 import { UserProfile } from '@/hooks/use-profile'
@@ -10,6 +11,7 @@ interface Props {
 
 export function ProfileHeader({ profile }: Props) {
     const initials = profile.email?.slice(0, 2).toUpperCase() || 'US'
+    const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? null)
 
     return (
         <div className="border-b bg-white">
@@ -18,7 +20,11 @@ export function ProfileHeader({ profile }: Props) {
 
                 <div className="relative px-2 pb-8">
                     <div className="-mt-16 flex flex-col gap-6 lg:flex-row lg:items-end">
-                        <ProfileAvatar initials={initials} />
+                        <ProfileAvatar
+                            initials={initials}
+                            avatarUrl={avatarUrl}
+                            onAvatarChange={setAvatarUrl}
+                        />
 
                         <div className="flex-1 space-y-4">
                             <div>

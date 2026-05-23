@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { UserList } from "@/components/users/user-list"
+import { UserList } from "@/app/user-management/components/user-list"
 import { useProfile } from "@/hooks/use-profile"
 
 export default function UserManagementPage() {

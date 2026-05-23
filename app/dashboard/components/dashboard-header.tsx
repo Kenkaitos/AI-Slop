@@ -7,6 +7,7 @@ import { Bell, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ProfileImage } from "@/components/shared/profile-image"
 
 import {
     Avatar,
@@ -49,16 +50,12 @@ export function DashboardHeader() {
                 </Button>
 
                 <Link href="/profile">
-                    <Avatar className="h-9 w-9 cursor-pointer transition-opacity hover:opacity-80">
-                        <AvatarImage
-                            src="/avatars/profile.png"
-                            alt="User"
-                        />
-
-                        <AvatarFallback>
-                            {profile?.nip?.slice(0, 2).toUpperCase() ?? "UA"}
-                        </AvatarFallback>
-                    </Avatar>
+                    <ProfileImage
+                        avatarUrl={profile?.avatar_url}
+                        initials={profile?.email?.slice(0, 2).toUpperCase() ?? "UA"}
+                        size="sm"
+                        className="cursor-pointer transition-opacity hover:opacity-80"
+                    />
                 </Link>
             </div>
         </header>
