@@ -24,8 +24,7 @@ export function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true)
     await logout()
-     revalidate()
-    window.location.href = "/login"
+    // no need for window.location.href anymore
   }
 
   return (
