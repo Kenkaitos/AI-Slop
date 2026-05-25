@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { login } from "./actions"
+import Image from "next/image"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -48,10 +49,12 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center">
-            <img
+            <Image
               src="/Monogov-Icon.png"
               alt="Logo"
-              className="w-48 h-30 object-cover"
+              width={192}
+              height={120}
+              className="object-cover"
             />
           </div>
           <CardTitle className="text-2xl font-semibold">Selamat Datang</CardTitle>
