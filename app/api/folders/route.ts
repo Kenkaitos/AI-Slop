@@ -16,15 +16,25 @@ async function getSessionAndProfile() {
     return { supabase, profile }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     const { supabase, profile } = await getSessionAndProfile()
     if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const { data, error } = await supabase
-        .from("folders")
-        .select("*")
-        .or(`workgroup.eq.${profile.workgroup},is_shared.eq.true`)
+    const { searchParams } = new URL(request.url)
+    const workgroup = searchParams.get("workgroup")
 
+    let query = supabase
+        .from("folders")
+        .select("*, users(nip, workgroup)")
+        .order("created_at", { ascending: false })
+
+    if (workgroup) {
+        query = query.eq("workgroup", workgroup)
+    } else {
+        query = query.eq("workgroup", profile.workgroup)
+    }
+
+    const { data, error } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json(data)
 }

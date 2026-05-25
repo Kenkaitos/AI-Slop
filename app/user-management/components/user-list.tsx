@@ -43,7 +43,7 @@ const USER_FILTERS = [
     {
         key: "workgroup",
         label: "Workgroup",
-        options: WORKGROUPS.map(w => ({ label: w, value: w })),
+        options: WORKGROUPS.map(w => ({ label: w.id, value: w.id })),
     },
     {
         key: "joined",

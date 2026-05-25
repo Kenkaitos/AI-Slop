@@ -25,6 +25,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get("type")
 
+    const folderId = searchParams.get("folder_id")
+
+    if (folderId) {
+        const { data, error } = await supabase
+            .from("files")
+            .select("*, users(nip, workgroup)")
+            .eq("folder_id", folderId)
+            .order("created_at", { ascending: false })
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json(data)
+    }
+
     if (type === "department") {
         const { data, error } = await supabase
             .from("files")
@@ -52,10 +65,6 @@ export async function GET(request: Request) {
 
 
         const { data, error } = await query
-
-        console.log("workgroup filter:", workgroup)
-        console.log("data:", data)
-        console.log("error:", error)
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
         return NextResponse.json(data)
     }
