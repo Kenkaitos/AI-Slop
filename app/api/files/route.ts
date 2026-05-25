@@ -19,7 +19,7 @@ async function getSessionAndProfile() {
 export async function GET(request: Request) {
     const { supabase, profile } = await getSessionAndProfile()
     console.log("profile:", profile) // add this
-    
+
     if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
@@ -34,6 +34,28 @@ export async function GET(request: Request) {
             .order("created_at", { ascending: false })
             .limit(10)
 
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json(data)
+    }
+
+    if (type === "shared") {
+        const workgroup = searchParams.get("workgroup")
+
+        let query = supabase
+            .from("files")
+            .select("*, users(nip, workgroup), folders!inner(name, workgroup)")
+            .order("created_at", { ascending: false })
+
+        if (workgroup) {
+            query = query.filter("folders.workgroup", "eq", workgroup)
+        }
+
+
+        const { data, error } = await query
+
+        console.log("workgroup filter:", workgroup)
+        console.log("data:", data)
+        console.log("error:", error)
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
         return NextResponse.json(data)
     }

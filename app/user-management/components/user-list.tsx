@@ -26,7 +26,8 @@ import { useProfile } from "@/hooks/use-profile"
 import { useUsers } from "@/hooks/use-users"
 import { User } from "@/lib/users-api"
 import { TableFilters } from "@/components/shared/table-filters"
-import { UserDialog, WORKGROUPS } from "./user-dialog"
+import { UserDialog} from "./user-dialog"
+import { WORKGROUPS } from "@/lib/workgroups"
 
 // ─── Constants ───────────────────────────────────────────────
 const USER_FILTERS = [

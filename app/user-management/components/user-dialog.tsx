@@ -10,9 +10,9 @@ import {
 import { FieldError } from "@/components/ui/field-error"
 import { useProfile } from "@/hooks/use-profile"
 import { User } from "@/lib/users-api"
+import { WORKGROUPS } from "@/lib/workgroups"
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-export const WORKGROUPS = ["Perumahan", "Keuangan", "Tata Ruang"]
 
 interface UserDialogProps {
     user: User | null
@@ -129,7 +129,7 @@ export function UserDialog({ user, open, onOpenChange, onSave, mode }: UserDialo
                         >
                             <option value="">Pilih workgroup</option>
                             {WORKGROUPS.map(w => (
-                                <option key={w} value={w}>{w}</option>
+                                <option key={w.id} value={w.id}>{w.id}</option>
                             ))}
                         </select>
                     </div>
