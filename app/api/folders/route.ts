@@ -28,10 +28,17 @@ export async function GET(request: Request) {
         .select("*, users(nip, workgroup)")
         .order("created_at", { ascending: false })
 
-    if (workgroup) {
-        query = query.eq("workgroup", workgroup)
+    const targetWorkgroup = workgroup ?? profile.workgroup
+
+    // Show folders belonging to selected workgroup
+    // OR folders that are shared (from any workgroup)
+    // but only if viewer is NOT from that workgroup
+    if (workgroup && workgroup !== profile.workgroup) {
+        // viewing another workgroup — only show shared folders
+        query = query.eq("workgroup", workgroup).eq("is_shared", true)
     } else {
-        query = query.eq("workgroup", profile.workgroup)
+        // viewing own workgroup — show all folders
+        query = query.eq("workgroup", targetWorkgroup)
     }
 
     const { data, error } = await query
