@@ -28,17 +28,26 @@ export async function GET(request: Request) {
         .select("*, users(nip, workgroup)")
         .order("created_at", { ascending: false })
 
-    const targetWorkgroup = workgroup ?? profile.workgroup
-
-    // Show folders belonging to selected workgroup
-    // OR folders that are shared (from any workgroup)
-    // but only if viewer is NOT from that workgroup
-    if (workgroup && workgroup !== profile.workgroup) {
-        // viewing another workgroup — only show shared folders
-        query = query.eq("workgroup", workgroup).eq("is_shared", true)
+    if (profile.role === "admin") {
+        // admin sees everything, just filter by selected workgroup if provided
+        if (workgroup) {
+            query = query.eq("workgroup", workgroup)
+        }
+    } else if (profile.role === "moderator") {
+        // moderator sees all folders in their own workgroup
+        // but only shared folders in other workgroups
+        if (workgroup && workgroup !== profile.workgroup) {
+            query = query.eq("workgroup", workgroup).eq("is_shared", true)
+        } else {
+            query = query.eq("workgroup", profile.workgroup)
+        }
     } else {
-        // viewing own workgroup — show all folders
-        query = query.eq("workgroup", targetWorkgroup)
+        // regular user — own workgroup sees all, other workgroups only shared
+        if (workgroup && workgroup !== profile.workgroup) {
+            query = query.eq("workgroup", workgroup).eq("is_shared", true)
+        } else {
+            query = query.eq("workgroup", workgroup ?? profile.workgroup)
+        }
     }
 
     const { data, error } = await query

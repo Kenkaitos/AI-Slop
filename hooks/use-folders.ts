@@ -16,14 +16,16 @@ export function useFolders(workgroup: string | null) {
         name: string
         password?: string
         is_shared?: boolean
+        workgroup?: string
     }) {
-        if (!workgroup) return
+        const targetWorkgroup = payload.workgroup ?? workgroup
+        if (!targetWorkgroup) return
         const created = await api.createFolder({
             ...payload,
-            workgroup,
+            workgroup: targetWorkgroup,
         })
         mutate((current: any[] = []) => [created, ...current], false)
-        return created  // ← return so main component can auto-open it
+        return created
     }
 
     async function removeFolder(id: string) {

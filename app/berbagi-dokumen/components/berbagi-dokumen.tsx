@@ -82,21 +82,30 @@ function CreateFolderDialog({
 }: {
     open: boolean
     onOpenChange: (v: boolean) => void
-    onCreate: (name: string, password?: string, isShared?: boolean) => Promise<void>
+    onCreate: (name: string, password?: string, isShared?: boolean, workgroup?: string) => Promise<void>
 }) {
+    const { profile, isAdmin } = useProfile()
     const [name, setName] = useState("")
     const [password, setPassword] = useState("")
     const [isShared, setIsShared] = useState(false)
+    const [workgroup, setWorkgroup] = useState("")
     const [saving, setSaving] = useState(false)
+
+    // reset when dialog opens
+    useEffect(() => {
+        if (open) {
+            setName("")
+            setPassword("")
+            setIsShared(false)
+            setWorkgroup(profile?.workgroup ?? "")
+        }
+    }, [open, profile])
 
     async function handleCreate() {
         if (!name.trim()) return
         setSaving(true)
-        await onCreate(name.trim(), password.trim() || undefined, isShared)
+        await onCreate(name.trim(), password.trim() || undefined, isShared, workgroup)
         setSaving(false)
-        setName("")
-        setPassword("")
-        setIsShared(false)
         onOpenChange(false)
     }
 
@@ -105,7 +114,7 @@ function CreateFolderDialog({
             <DialogContent className="sm:max-w-sm">
                 <DialogHeader>
                     <DialogTitle>Buat Folder Baru</DialogTitle>
-                    <DialogDescription>Folder akan dibuat di workgroup Anda</DialogDescription>
+                    <DialogDescription>Folder akan dibuat di workgroup yang dipilih</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                     <div className="space-y-1">
@@ -116,6 +125,23 @@ function CreateFolderDialog({
                             onChange={(e) => setName(e.target.value)}
                         />
                     </div>
+
+                    {/* Only show workgroup selector for admin */}
+                    {isAdmin && (
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium">Workgroup</label>
+                            <select
+                                value={workgroup}
+                                onChange={(e) => setWorkgroup(e.target.value)}
+                                className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                            >
+                                {WORKGROUPS.map(w => (
+                                    <option key={w.id} value={w.id}>{w.id}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     <div className="space-y-1">
                         <label className="text-sm font-medium">
                             Password{" "}
@@ -128,6 +154,7 @@ function CreateFolderDialog({
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
+
                     <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
                         <div>
                             <p className="text-sm font-medium">Bagikan ke semua bidang</p>
@@ -136,13 +163,16 @@ function CreateFolderDialog({
                         <button
                             type="button"
                             onClick={() => setIsShared(!isShared)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isShared ? "bg-slate-900" : "bg-slate-200"
-                                }`}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                isShared ? "bg-slate-900" : "bg-slate-200"
+                            }`}
                         >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isShared ? "translate-x-6" : "translate-x-1"
-                                }`} />
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                isShared ? "translate-x-6" : "translate-x-1"
+                            }`} />
                         </button>
                     </div>
+
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
                         <Button onClick={handleCreate} disabled={saving || !name.trim()}>
@@ -154,6 +184,7 @@ function CreateFolderDialog({
         </Dialog>
     )
 }
+
 // ─── Files View ───────────────────────────────────────────────
 function FilesView({ folder }: { folder: any }) {
     const { profile, isAdmin, isModerator } = useProfile()
